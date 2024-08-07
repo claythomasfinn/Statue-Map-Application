@@ -6,6 +6,8 @@ from dash.exceptions import PreventUpdate
 
 df = pd.read_csv('statue_map/csv/updated_coordinates6.csv', encoding='unicode_escape')
 
+
+#test commit
 title = 'Sports Statues in US'
 hover_title = df['Athlete']
 hover_details = ['Description']
