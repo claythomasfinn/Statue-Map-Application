@@ -4,7 +4,7 @@ from dash import Dash, dcc, html, State, Input, Output, no_update, set_props
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
-df = pd.read_csv('statue_map/csv/updated_coordinates6.csv', encoding='unicode_escape')
+df = pd.read_csv('updated_coordinates6.csv', encoding='unicode_escape')
 
 title = 'Sports Statues in US'
 hover_title = df['Athlete']
@@ -22,8 +22,22 @@ fig.update_traces(hoverinfo="none", hovertemplate=None)
 
 #Run Dash app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-app.layout = dcc.Dropdown(options, id="searchbar", multi=False), dbc.Container([
-    graph := dcc.Graph(id="graph-interactive", figure=fig, clear_on_unhover=True),
+app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Search athlete...", style={
+                'position': 'absolute',
+                'top': '10px',
+                'left': '50%',
+                'transform': 'translateX(-50%)',
+                'zIndex': '1000',
+                'width': '500px',
+                'backgroundColor': 'white', 'overflow': 'visible', 'boxShadow': '0 2px 6px rgba(0,0,0,0.3)',
+            }, persistence=True,
+    persistence_type='session',
+    clearable=True), dbc.Container([
+    graph := dcc.Graph(id="graph-interactive", figure=fig, clear_on_unhover=True, style={
+    'position': 'relative',
+    'height': '100vh',
+    'overflow': 'visible'  # allow dropdown menu to overflow
+}),
     hover_tt := dcc.Tooltip(id="graph-tooltip"),
     modal := dbc.Modal(id="modal", centered=True, is_open=False),
 ], id="container", fluid=True)
