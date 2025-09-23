@@ -23,6 +23,7 @@ fig.update_traces(hoverinfo="none", hovertemplate=None)
 
 #Run Dash app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Search athlete...", style={
                 'position': 'absolute',
                 'top': '10px',
@@ -42,8 +43,6 @@ app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Sea
     hover_tt := dcc.Tooltip(id="graph-tooltip"),
     modal := dbc.Modal(id="modal", centered=True, is_open=False),
 ], id="container", fluid=True)
-
-server = app.server
 
 #callback for hover tooltip
 @app.callback(
