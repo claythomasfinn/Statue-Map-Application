@@ -172,7 +172,7 @@ def search_result(search_result, is_open):
     return True, children
 
 #print(options)
-
+server = app.server
 #run app
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
