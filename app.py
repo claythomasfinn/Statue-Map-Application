@@ -4,6 +4,7 @@ from dash import Dash, dcc, html, State, Input, Output, no_update, set_props
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
+
 df = pd.read_csv('updated_coordinates6.csv', encoding='unicode_escape')
 
 title = 'Sports Statues in US'
@@ -41,6 +42,8 @@ app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Sea
     hover_tt := dcc.Tooltip(id="graph-tooltip"),
     modal := dbc.Modal(id="modal", centered=True, is_open=False),
 ], id="container", fluid=True)
+
+server = app.server
 
 #callback for hover tooltip
 @app.callback(
@@ -172,7 +175,7 @@ def search_result(search_result, is_open):
     return True, children
 
 #print(options)
-server = app.server
+
 #run app
 if __name__ == "__main__":
     app.run(debug=True, use_reloader=False)
