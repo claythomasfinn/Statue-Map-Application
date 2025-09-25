@@ -25,6 +25,7 @@ fig.update_traces(hoverinfo="none", hovertemplate=None)
 
 #Run Dash app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Search athlete...", style={
                 'position': 'absolute',
                 'top': '20px',
