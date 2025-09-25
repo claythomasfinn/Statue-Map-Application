@@ -15,6 +15,7 @@ options_2 = [dict(zip(df['Athlete'], df['Athlete']))]
 df['time'] = pd.to_numeric(df['time'], errors='coerce').astype(int)
 df = df.dropna(subset=['time'])
 df['id'] = df.index
+all_options = [{"label": a, "value": a} for a in df['Athlete']]
 
 #Plot map and layout
 fig = px.scatter_mapbox(df, lat=df['LATITUDE'], lon=df['LONGITUDE'], #title=title,
@@ -26,8 +27,8 @@ fig.update_traces(hoverinfo="none", hovertemplate=None)
 #Run Dash app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 server = app.server
-app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Search athlete...", style={
-                'position': 'absolute',
+app.layout = html.Div(dcc.Dropdown(options=all_options, id="searchbar", multi=False, placeholder="Search athlete...", style={
+                'position': 'fixed',
                 'top': '20px',
                 'left': '50%',
                 'transform': 'translateX(-50%)',
@@ -36,7 +37,7 @@ app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Sea
                 'backgroundColor': 'white', 'overflow': 'visible', 'boxShadow': '0 2px 6px rgba(0,0,0,0.3)',
             }, persistence=True,
     persistence_type='session',
-    clearable=True), dbc.Container([
+    clearable=True)), dbc.Container([
     graph := dcc.Graph(id="graph-interactive", figure=fig, clear_on_unhover=True),
     hover_tt := dcc.Tooltip(id="graph-tooltip"),
     modal := dbc.Modal(id="modal", centered=True, is_open=False),
@@ -130,16 +131,20 @@ def display_click(clickData, is_open):
 
     return True, children
 
+
 #callback for searchbar typing
+
 @app.callback(
     Output('searchbar', 'options'),
     Input('searchbar', 'search_value'),
 )
 def update_options(search_value):
     if not search_value:
-        raise PreventUpdate
+        return all_options
 
-    return [o for o in options if search_value.title() in o]
+    matches = [o for o in df['Athlete'] if search_value.lower() in o.lower()]
+    options = [{"label": a, "value": a} for a in matches]
+    return options
 
 #callback for searching and displaying modal with result
 @app.callback(
@@ -152,6 +157,7 @@ def search_result(search_result, is_open):
         return is_open, no_update
     
     df_row = df.loc[search_result == df['Athlete'], :]
+    
     img_src = df_row['image']
     img_src_1 = img_src.iloc[0]
     name = df_row['Athlete']
