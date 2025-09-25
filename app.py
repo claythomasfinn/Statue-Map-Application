@@ -4,7 +4,6 @@ from dash import Dash, dcc, html, State, Input, Output, no_update, set_props
 import dash_bootstrap_components as dbc
 from dash.exceptions import PreventUpdate
 
-
 df = pd.read_csv('updated_coordinates6.csv', encoding='unicode_escape')
 
 title = 'Sports Statues in US'
@@ -13,20 +12,22 @@ hover_details = ['Description']
 sort = df.sort_values('Athlete')
 options = sort['Athlete']
 options_2 = [dict(zip(df['Athlete'], df['Athlete']))]
+df['time'] = pd.to_numeric(df['time'], errors='coerce').astype(int)
+df = df.dropna(subset=['time'])
+df['id'] = df.index
 
 #Plot map and layout
 fig = px.scatter_mapbox(df, lat=df['LATITUDE'], lon=df['LONGITUDE'], #title=title,
-                        color_discrete_sequence=["fuchsia"], zoom=4, height=1000, size=df['size'])
+                        color_discrete_sequence=["fuchsia"], zoom=4, height=1000, size=df['size'], custom_data=['id'])
 fig.update_layout(mapbox_style="open-street-map")
 fig.update_layout(margin={"r":0,"t":10,"l":0,"b":0})
 fig.update_traces(hoverinfo="none", hovertemplate=None)
 
 #Run Dash app
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
 app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Search athlete...", style={
                 'position': 'absolute',
-                'top': '10px',
+                'top': '20px',
                 'left': '50%',
                 'transform': 'translateX(-50%)',
                 'zIndex': '1000',
@@ -35,31 +36,38 @@ app.layout = dcc.Dropdown(options, id="searchbar", multi=False, placeholder="Sea
             }, persistence=True,
     persistence_type='session',
     clearable=True), dbc.Container([
-    graph := dcc.Graph(id="graph-interactive", figure=fig, clear_on_unhover=True, style={
-    'position': 'relative',
-    'height': '100vh',
-    'overflow': 'visible'  # allow dropdown menu to overflow
-}),
+    graph := dcc.Graph(id="graph-interactive", figure=fig, clear_on_unhover=True),
     hover_tt := dcc.Tooltip(id="graph-tooltip"),
     modal := dbc.Modal(id="modal", centered=True, is_open=False),
-], id="container", fluid=True)
+], id="container", fluid=True), html.Div(dcc.RangeSlider(
+    min=int(df['time'].min()), max=int(df['time'].max()), step=1, value=[int(df['time'].min()), int(df['time'].max())], marks=None, id='year-slider', tooltip={"placement": "bottom", "always_visible": True}), style={
+                'position': 'absolute',
+                'top': '15px',
+                'left': '50%',
+                'transform': 'translateX(-50%)',
+                'zIndex': '1000',
+                'width': '1000px',
+            }), dcc.Store(id='filtered-df', data=df.to_dict('records'))
 
 #callback for hover tooltip
 @app.callback(
    Output(hover_tt, "show"),
    Output(hover_tt, "bbox"),
    Output(hover_tt, "children"),
-   Input(graph, 'hoverData'))
+   Input(graph, 'hoverData'),
+   State('filtered-df', 'data'))
 
-def display_hover(hoverData):
+def display_hover(hoverData, data):
     if hoverData is None:
         return False, no_update, no_update
 
+    filtered = pd.DataFrame(data)
+    
     pt = hoverData["points"][0]
     bbox = pt["bbox"]
     num = pt["pointNumber"]
 
-    df_row = df.iloc[num]
+    df_row = filtered.iloc[num]
     img_src = df_row['image']
     name = df_row['Athlete']
     desc = df_row['Description']
@@ -91,11 +99,12 @@ def display_click(clickData, is_open):
     # clear hover tooltip
     set_props("graph-tooltip", { "show": False, "children": list() })
 
+    row_id = clickData['points'][0]['customdata'][0]
+    df_row = df.loc[df['id'] == row_id].iloc[0]
     pt = clickData["points"][0]
     bbox = pt["bbox"]
     num = pt["pointNumber"]
-
-    df_row = df.iloc[num]
+    
     img_src = df_row['image']
     name = df_row['Athlete']
     desc = df_row['Description']
@@ -174,6 +183,40 @@ def search_result(search_result, is_open):
     return True, children
 
 #print(options)
+
+#slider callback
+@app.callback(
+    Output("filtered-df", "data"),
+    Input("year-slider", "value"),
+)
+def update_map(year_range):
+    years = [int(item) for item in year_range]
+    start = years[0]
+    end = years[-1]
+    filtered = df[(df['time'] >= start) & (df['time'] <= end)]
+
+    return filtered.to_dict('records')
+
+#map callback overall
+@app.callback(
+    Output("graph-interactive", "figure"),
+    Input('filtered-df', 'data')
+)
+def update_map(data):
+    filtered = pd.DataFrame(data)
+    fig = px.scatter_mapbox(
+        filtered,
+        lat=filtered['LATITUDE'],
+        lon=filtered['LONGITUDE'],
+        color_discrete_sequence=["fuchsia"],
+        zoom=4,
+        height=1000,
+        size=filtered['size'],
+        custom_data=['id']
+    )
+    fig.update_layout(mapbox_style="open-street-map", margin={"r":0,"t":10,"l":0,"b":0})
+    fig.update_traces(hoverinfo="none", hovertemplate=None)
+    return fig
 
 #run app
 if __name__ == "__main__":
